@@ -50,7 +50,7 @@ This tuning creates a specific probability curve for the generated slips:
     ```bash
     git clone https://github.com/simo981/sample_sanremo_streak
     ```
-2.  Install dependencies:
+2.  Install dependencies (create env or conda or whatever):
     ```bash
     pip3 install -r requirements.txt
     ```
