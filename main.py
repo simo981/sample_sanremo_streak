@@ -11,9 +11,7 @@ from util import get_matches
 SAMPLING_METHOD = "Gaussian" # or "Uniform" -> Distribution form sampling with peak quartile, default Gaussian
 SORT_BY_PRODUCT = False # product sort tuples (from higher Q1 * Q2 to lower) effective only when SAMPLE_SIZE < Actual Match Size
 QUANTILE = 0.25 # from previous year results (between first and second quantile -> peak at first Q)
-STANDARD_DEV_SAMPLING = 2. # deviation of sampling starting distribution from peak QUANTILE
 SAMPLE_SIZE = 14 # how many bettings
-WINDOW_RADIUS = 100 # max window of betting strategy
 
 # if you have it insert it, a sample of structure is this, if None, auto retrieval do the trick
 # ( ("T/T BRESH con DE ANDRè C. - BRUNORI SAS con DIMARTINO-SINIGALLIA", 2.40, 1.50), ..., ..., )
@@ -45,10 +43,12 @@ def load_matches_from_disk(filename: str) -> Tuple[Tuple[str, float, float], ...
     except Exception as _:
         return ()
 
-def save_slips_to_file(filename: str, slips: Sequence[Tuple[Tuple[int, ...], float]], pairs: Sequence[Tuple[str, float, float]]):
+def save_slips_to_file(filename: str, slips: Sequence[Tuple[Tuple[int, ...], float]], pairs: Sequence[Tuple[str, float, float]], infos: str = ""):
     try:
         with open(filename, 'w', encoding='utf-8') as f:
-            f.write(f"REPORT\n")
+            f.write(f"SANREMO BETTING REPORT\n")
+            if infos != "":
+                f.write(f"{infos}\n")
             f.write(f"Sampling method: {SAMPLING_METHOD} | Quantile Target: {QUANTILE}\n")
             f.write("="*60 + "\n\n")
             for i, (picks, total_odd) in enumerate(slips, 1):
@@ -127,7 +127,16 @@ def main():
             pairs = get_top_k_pairs(get_matches(), k = SAMPLE_SIZE, sort = SORT_BY_PRODUCT)
     slips = generate_slips(pairs)
     stats = summarize_quantile(slips)
-    print("Betting Strategy")
+    # Calculate total phase space (2^N combinations)
+    total_combinations = 2 ** len(pairs)
+    # Window Radius: 1/8 of the total (12.5%). 
+    # Wide enough to capture the gradient towards adjacent quantiles.
+    WINDOW_RADIUS = int(total_combinations / 8)
+    # Filter Standard Deviation: Very wide (4.0).
+    # Used to avoid clipping the Gaussian tails before sampling.
+    STANDARD_DEV_SAMPLING = 4.0
+    params_comment = f"""Dynamic Strategy on {len(pairs)} matches ({total_combinations} total slips).\nCalculated Parameters: Window Radius = {WINDOW_RADIUS}, StdDev Filter = {STANDARD_DEV_SAMPLING}.\nDistribution Target: ~60% slips near quantile {QUANTILE}, ~40% on tails (towards adjacent quantiles)."""
+    print(params_comment)
     print("\n".join(f"{label.title():<4}: {describe(slip)}" for label, slip in zip(("min", "q1", "med", "q3", "max"), stats)))
     idx = min(len(slips) - 1, max(0, int(len(slips) * max(0.0, min(1.0, QUANTILE)))))
     target = slips[idx][1]
@@ -139,14 +148,14 @@ def main():
         return
     sample = ()
     if SAMPLING_METHOD == "Gaussian":
-        sample = gaussian_sample(filtered, target, sigma / 2, SAMPLE_SIZE)
+        sample = gaussian_sample(filtered, target, sigma, SAMPLE_SIZE)
     elif SAMPLING_METHOD == "Uniform":
         sample = uniform_sample(filtered, SAMPLE_SIZE)
     print(f"\nFocused on idx {idx} ({QUANTILE:.2%}) odds {target:.4f}, {len(filtered)} slips in ±{sigma:.4f}.")
     print(f"\n{SAMPLING_METHOD} samples:")
     for slip in sample:
         print(describe(slip))
-    save_slips_to_file("betting_strategy.txt", sample, pairs)
+    save_slips_to_file("betting_strategy.txt", sample, pairs, params_comment)
 
 if __name__ == "__main__":
     main()
