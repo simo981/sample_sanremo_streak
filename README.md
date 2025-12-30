@@ -36,7 +36,7 @@ This ensures that the generated slips are **mathematically clustered** around yo
 
 The algorithm is pre-configured with specific parameters to balance **precision** (hitting the target odds) and **variance** (exploring adjacent possibilities).
 
-* **Window Radius ($R = |\Omega| / 8$):** The algorithm analyzes a local population of $ |\Omega|$ / 8 neighboring slips to determine the odds density.
+* **Window Radius ($R = |\Omega| / 8$):** The algorithm analyzes a local population of $|\Omega| / 8$ neighboring slips to determine the odds density.
 * **StdDev Filter ($\sigma_{mul} = 4.0$):** A wide filter is applied to avoid "clipping" the Gaussian tails too early.
 
 **The Resulting Distribution:**
