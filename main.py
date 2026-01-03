@@ -11,13 +11,14 @@ from util import get_matches
 SAMPLING_METHOD = "Gaussian" # or "Uniform" -> Distribution form sampling with peak quartile, default Gaussian
 SORT_BY_PRODUCT = False # product sort tuples (from higher Q1 * Q2 to lower) effective only when SAMPLE_SIZE < Actual Match Size
 QUANTILE = 0.25 # from previous year results (between first and second quantile -> peak at first Q)
-SAMPLE_SIZE = 14 # how many bettings
+SAMPLE_SIZE = 10 # how many bettings
+BET_SIZE = 999 # how many T/T need to take
 
 # if you have it insert it, a sample of structure is this, if None, auto retrieval do the trick
 # ( ("T/T BRESH con DE ANDRè C. - BRUNORI SAS con DIMARTINO-SINIGALLIA", 2.40, 1.50), ..., ..., )
 DEFAULT_BET_PAIRS: Tuple[Tuple[str, float, float], ...] | None = None
 
-def get_top_k_pairs(matches: List[Dict], k: int = SAMPLE_SIZE, sort: bool = SORT_BY_PRODUCT) -> Tuple[Tuple[str, float, float], ...]:
+def get_top_k_pairs(matches: List[Dict], k: int = BET_SIZE, sort: bool = SORT_BY_PRODUCT) -> Tuple[Tuple[str, float, float], ...]:
     processed_list = []
     for m in matches:
         full_title = f"T/T {m['sfidante_1']} - {m['sfidante_2']}"
@@ -124,7 +125,7 @@ def main():
     if pairs is None:
         pairs = load_matches_from_disk("quote_sanremo_TT.json")
         if pairs == ():
-            pairs = get_top_k_pairs(get_matches(), k = SAMPLE_SIZE, sort = SORT_BY_PRODUCT)
+            pairs = get_top_k_pairs(get_matches(), k = BET_SIZE, sort = SORT_BY_PRODUCT)
     slips = generate_slips(pairs)
     stats = summarize_quantile(slips)
     # Calculate total phase space (2^N combinations)
